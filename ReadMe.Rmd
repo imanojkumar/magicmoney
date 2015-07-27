@@ -1,4 +1,9 @@
-# Magic money. Showing your working
+---
+title: "Magic money. Showing your working"
+output: 
+  html_document: 
+    keep_md: yes
+---
 
 This is a companion document for a post I am writing, this contains the same content as the post but shows the full working
 
@@ -6,15 +11,13 @@ At any one time, some people take out loans to buy houses, some people work payi
 
 Declaring my sources for this right at the outset the data file used is compiled from the Reserve Bank of New Zealand. The housing Value (in billions) is available in time units of quarters in the RBNZ housing data. The Household Debt (in millions) comes from the Reserve Bank series C6. As C6 is in time units of months I have converted it to quarters by taking the average debt of the months in the quarter, as this is what the Reserve Bank does in the shorter time series C6a. that is my raw data
 
-
-```r
+```{r}
 rw <- read.csv("rawdata.csv", stringsAsFactors = FALSE)
 ```
 
 Just doing a little clean-up of the file, I convert the quarters information to actual dates (the last date of the quarter), and change the values units to millions so that they are in the same units as debt (you will need to install the lubridate package in R to run this code).
 
-
-```r
+```{r}
 tidyDate <- function(x){
   bits <- unlist(strsplit(x, split="Q"))
   yr <- bits[1]
@@ -29,13 +32,11 @@ rw$Value <- rw$Value * 1000
 
 Then people make a graph like this showing the relationship between debt (red) and price (blue). Because I am making a horrible two axis graph I need to install the plotrix package in R to run this code.
 
-
-```r
+```{r}
 library(plotrix)
 twoord.plot(lx= rw$quartend,ly=rw$Value/1000,rx=rw$quartend, ry=rw$Debt/1000, xlab="1991Q1 <- Time -> 2015Q2", ylab="Value (billion)",rylab="Debt (billion)",lcol="blue", rcol="red", main="Housing Value and Household Debt", type="l", xticklab=as.character(rw$quartend))
-```
 
-![](ReadMe_files/figure-html/unnamed-chunk-3-1.png) 
+```
 
 ...and people go run linear relationship models on that and conclude it fits wonderfully.
 
@@ -45,58 +46,30 @@ There are a few things wrong with this graph, but the main thing is that it has 
 
 Now because we are not blind monkeys mooshing keyboards, but instead have some understanding of the "stuff increasing over time" issue, we will take the difference between quarters. This is a very standard approach to things that happen over time, and we have evenly spaced time periods so it all works nicely. From each quarter you subtract the value for the previous one, so that you are left with how much things change by. This lets you compare the amount changing one changes the other, and doesn't have any "over time" issues as they are all the same short block
 
-
-```r
+```{r}
 rw$qonqValue <- rw$Value - c(NA, rw$Value[1:(length(rw$Value))-1])#don't have a previous for the 1st
 rw$qonqDebt <- rw$Debt - c(NA, rw$Debt[1:(length(rw$Debt))-1])#don't have a previous for the 1st
 ```
 
 Making the similar graph as the previous but this time using the Quarter on Quarter information and locking down the vertical axis
 
-
-```r
+```{r}
 plot(rw$quartend, rw$qonqValue, col="blue", type="l", xlab="time", ylab="millions of dollars")
 lines(rw$quartend, rw$qonqDebt, col="red", type="l")
 ```
 
-![](ReadMe_files/figure-html/unnamed-chunk-5-1.png) 
-
 Now, how well does Household Debt- the cycle of people getting and paying off mortgages- explain Housing Values. We do the linear regression on the quarterly figures that was unwise to do on the raw figures.
 
-
-```r
+```{r}
 relation <- lm(qonqValue ~ qonqDebt, data=rw)
 print(summary(relation))
-```
-
-```
-## 
-## Call:
-## lm(formula = qonqValue ~ qonqDebt, data = rw)
-## 
-## Residuals:
-##    Min     1Q Median     3Q    Max 
-## -32070  -2338     21   2764  14459 
-## 
-## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) -2105.3080  1292.6476  -1.629    0.107    
-## qonqDebt        4.5298     0.5492   8.248 9.63e-13 ***
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-## 
-## Residual standard error: 6689 on 94 degrees of freedom
-##   (1 observation deleted due to missingness)
-## Multiple R-squared:  0.4198,	Adjusted R-squared:  0.4137 
-## F-statistic: 68.02 on 1 and 94 DF,  p-value: 9.629e-13
 ```
 
 An R-squared value of 0.4198 means that most of the time the movements in value are not predicted by the movements in debt- people get mortgages are not strongly influencing money being paid for houses. But even that a bit rubbish because it doesn't take into account the possibility that things have changed over time, and not being a blind monkey it is pretty clear that scale of movements in recent times is much more than earlier times (other sources suggest the pre 2001 pattern held going back through time). I would also suggest that the upward trajectory since 2008 is not reflected by movements in debt.
 
 To get a sense of the magnitude in a slightly speculative way, lets look at the cumulative differences
 
-
-```r
+```{r}
 rw$cumqVal <- numeric(nrow(rw))
 rw$cumqDebt <- numeric(nrow(rw))
 rw$cumqVal[2:nrow(rw)] <- cumsum(rw$qonqValue[2:nrow(rw)])
@@ -105,27 +78,20 @@ plot(rw$quartend, rw$cumqVal/1000, col="blue", type="l", xlab="time", ylab="bill
 lines(rw$quartend, rw$cumqDebt/1000, col="red", type="l")
 ```
 
-![](ReadMe_files/figure-html/unnamed-chunk-7-1.png) 
-
 Keeping in mind that in the early 90s household debt matched house value, and it still does in other countries that are not open to buying from the world, the height of the blue line above the red line is the about of gain in value (in billions) that cannot be explained by household debt (and does not seem to be coming from any other sector of the economy). I realise I am now back to "stuff increasing over time" that mean it is a problem comparing things of deferent periods, but I am working back to a comparison with the first graph.
 
 Expressed as one graph, the "magic money"" component is:
-
-```r
+```{r}
 plot(rw$quartend, (rw$cumqVal/1000 - rw$cumqDebt/1000), type="l", xlab="time", ylab="billions of dollars")
-```
 
-![](ReadMe_files/figure-html/unnamed-chunk-8-1.png) 
+```
 
 Compared with the total value of the housing market (green) the magic money component from gains is:
 
-
-```r
+```{r}
 plot(rw$quartend, rw$Value/1000, type="l", xlab="time", ylab="billions of dollars", col="green")
 lines(rw$quartend, (rw$cumqVal/1000 - rw$cumqDebt/1000), type="l", xlab="time", ylab="billions of dollars")
 ```
-
-![](ReadMe_files/figure-html/unnamed-chunk-9-1.png) 
 
 In this the green line is the total value of New Zealand Housing, the black line is the gains in value that has come from "magic money" that has no apparent source in the New Zealand economy. Keeping in mind none of that was inflation/ M3 adjusted or otherwise change over time fixed.
 
