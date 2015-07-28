@@ -8,7 +8,7 @@ Declaring my sources for this right at the outset the data file used is compiled
 
 
 ```r
-#download.file("https://raw.githubusercontent.com/thoughtfulbloke/magicmoney/master/rawdata.csv", destfile="rawdata.csv", method="libcurl")
+download.file("https://raw.githubusercontent.com/thoughtfulbloke/magicmoney/master/rawdata.csv", destfile="rawdata.csv", method="libcurl")
 rw <- read.csv("rawdata.csv", stringsAsFactors = FALSE)
 ```
 
